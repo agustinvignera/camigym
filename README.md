@@ -2,7 +2,8 @@
 
 App de rutinas de **Camila Lasa · Entrenamientos** para el celular.
 
-- `index.html`: la app completa (sin build). Sin configuración de Supabase funciona en modo demo con datos de ejemplo.
+- `index.html`: la app en producción, conectada a Supabase.
+- `demo.html`: la misma app en modo demo, con datos de ejemplo guardados en el celular.
 - `db/schema.sql`: tablas y funciones de Supabase (acceso por link personal del alumno y link secreto de la profe).
 - `db/seed.sql`: biblioteca de ejercicios inicial y plan de ejemplo.
 
