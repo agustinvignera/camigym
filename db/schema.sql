@@ -147,3 +147,24 @@ revoke all on function _alumno(text), _profe(text), _ex_json(), _alumno_json(alu
 grant execute on function alumno_load(text), alumno_sesion(text,text,date,boolean), alumno_peso(text,text,text), alumno_comentar(text,text,text),
   profe_load(text), profe_alumno_nuevo(text,text), profe_alumno_guardar(text,uuid,text,date,jsonb), profe_ex_guardar(text,text,text,text,text), profe_ex_borrar(text,text)
   to anon;
+
+-- ---------- 2026-11-19: foto del alumno ----------
+alter table alumnos add column if not exists foto text check (foto is null or length(foto) <= 250000);
+create or replace function _alumno_json(a alumnos, with_token boolean) returns json
+language sql security definer set search_path = public as $$
+  select json_build_object(
+    'id', a.id, 'nombre', a.nombre, 'inicio', a.inicio, 'plan', a.plan, 'activo', a.activo, 'foto', a.foto,
+    'token', case when with_token then a.token end,
+    'ses', (select coalesce(json_agg(json_build_object('k',k,'d',d) order by d), '[]'::json) from sesiones where alumno=a.id),
+    'pes', (select coalesce(json_object_agg(key, json_build_object('v',v,'d',d)), '{}'::json) from pesos where alumno=a.id),
+    'com', (select coalesce(json_agg(json_build_object('k',k,'t',t,'d',creado) order by creado), '[]'::json) from comentarios where alumno=a.id));
+$$;
+revoke all on function _alumno_json(alumnos, boolean) from public, anon, authenticated;
+create or replace function profe_alumno_foto(p_token text, p_id uuid, p_foto text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  perform _profe(p_token);
+  if p_foto is not null and p_foto !~ '^data:image/(jpeg|png|webp);base64,' then raise exception 'formato de foto no válido'; end if;
+  update alumnos set foto = nullif(p_foto,'') where id = p_id;
+end $$;
+grant execute on function profe_alumno_foto(text,uuid,text) to anon;
